@@ -3,6 +3,8 @@ ARENHOST_CREDENTIALS.md
 PROJECT_KNOWLEDGE_BASE.md
 *.log
 .env
+*.pub
+id_rsa*
 
 # File kompresi & dump lokal
 *.zip
