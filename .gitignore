@@ -1,5 +1,6 @@
 # Kredensial rahasia & log
 ARENHOST_CREDENTIALS.md
+PROJECT_KNOWLEDGE_BASE.md
 *.log
 .env
 
