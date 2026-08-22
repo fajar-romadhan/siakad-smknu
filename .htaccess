@@ -1,0 +1,20 @@
+# =========================================================
+# SIAKAD SMK NU — Root .htaccess
+# Semua request diarahkan ke folder public/ secara transparan
+# =========================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Jangan rewrite jika request sudah ke file/folder fisik atau sudah ke public
+    RewriteCond %{REQUEST_URI} !public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Sembunyikan direct listing
+Options -Indexes
+
+# Cegah akses langsung ke file sensitif
+<FilesMatch "\.(sql|md|log|env|json|lock)$">
+    Require all denied
+</FilesMatch>
