@@ -4,7 +4,7 @@ foreach($siswaList as $s){ if((int)($s['is_validated']??0)===1) $adaValidasi=tru
 $bulanLabel = date('F', strtotime('2020-'.$bulan.'-01'));
 ?>
 <div class="dash-header-row">
-    <h2 class="page-title">Input Nilai Bulanan - Kelas <?= htmlspecialchars($kelas['nama_kelas']) ?> - <?= htmlspecialchars($mapel['nama_mapel']) ?></h2>
+    <h2 class="page-title">Input Nilai Bulanan - <?= htmlspecialchars(format_kelas($kelas['nama_kelas'])) ?> - <?= htmlspecialchars($mapel['nama_mapel']) ?></h2>
     <a href="<?= base_url('index.php?page=nilai') ?>" class="btn btn-secondary">← Kembali</a>
 </div>
 

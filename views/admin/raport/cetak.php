@@ -69,7 +69,7 @@ $logoUrl = isset($logo) && $logo ? $logo : (file_exists(BASE_PATH . '/public/img
 <meta charset="UTF-8">
 <title>Raport - <?= htmlspecialchars($siswa['nama'] ?? '-') ?></title>
 <style>
-    @page { size: A4 portrait; margin: 20mm; }
+    @page { size: A4 portrait; margin: 15mm; }
     body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #000; margin: 0; padding: 0; }
     table { border-collapse: collapse; border: 1px solid #000; width: 100%; table-layout: fixed; }
     th, td { border: 1px solid #000; padding: 4px 5px; vertical-align: top; }
@@ -77,8 +77,8 @@ $logoUrl = isset($logo) && $logo ? $logo : (file_exists(BASE_PATH . '/public/img
     td { text-align: left; }
     td.center { text-align: center; }
     td.bold { font-weight: bold; }
-    .page { width: 100%; min-height: 257mm; page-break-after: always; }
-    .page:last-child { page-break-after: auto; }
+    .page { width: 100%; page-break-after: always; page-break-inside: avoid; }
+    .page-last { page-break-after: avoid !important; page-break-after: none !important; }
     .cover { text-align: center; padding-top: 20mm; }
     .logo { width: 34mm; height: 34mm; margin: 0 auto 8mm auto; }
     .school-name { font-size: 22pt; font-weight: bold; margin: 2mm 0 1mm 0; }
@@ -168,7 +168,7 @@ $logoUrl = isset($logo) && $logo ? $logo : (file_exists(BASE_PATH . '/public/img
             <td style="border:none;padding:0 0 3mm 0;">
                 <table class="table-small" style="border:1px solid #000;">
                     <tr><td class="field-label">Nama Peserta Didik</td><td class="field-value"><strong><?= htmlspecialchars($siswa['nama'] ?? '-') ?></strong></td></tr>
-                    <tr><td class="field-label">NIS</td><td class="field-value"><?= htmlspecialchars($siswa['nis'] ?? $siswa['nipd'] ?? '-') ?></td></tr>
+                    <tr><td class="field-label">NIPD</td><td class="field-value"><?= htmlspecialchars($siswa['nipd'] ?? $siswa['nis'] ?? '-') ?></td></tr>
                     <tr><td class="field-label">NISN</td><td class="field-value"><?= htmlspecialchars($siswa['nisn'] ?? '-') ?></td></tr>
                     <tr><td class="field-label">Jenis Kelamin</td><td class="field-value"><?= htmlspecialchars($siswa['jenis_kelamin'] ?? '-') ?></td></tr>
                     <tr><td class="field-label">Tempat Lahir</td><td class="field-value"><?= htmlspecialchars($siswa['tempat_lahir'] ?? '-') ?></td></tr>
@@ -186,7 +186,7 @@ $logoUrl = isset($logo) && $logo ? $logo : (file_exists(BASE_PATH . '/public/img
     </table>
 </div>
 
-<div class="page">
+<div class="page page-last" style="page-break-after: avoid; page-break-after: none;">
     <div class="subtitle">HASIL BELAJAR</div>
     <div class="line"></div>
     <table class="table-small" style="border:none;margin-bottom:3mm;">
@@ -211,21 +211,19 @@ $logoUrl = isset($logo) && $logo ? $logo : (file_exists(BASE_PATH . '/public/img
             <thead>
                 <tr>
                     <th style="width:5%;">No</th>
-                    <th style="width:10%;">Kode Mapel</th>
-                    <th style="width:20%;">Mata Pelajaran</th>
-                    <th style="width:8%;">Nilai Harian</th>
-                    <th style="width:8%;">Tugas</th>
-                    <th style="width:8%;">Kompetensi / Praktik</th>
-                    <th style="width:8%;">Nilai Akhir</th>
+                    <th style="width:25%;">Mata Pelajaran</th>
+                    <th style="width:9%;">Nilai Harian</th>
+                    <th style="width:9%;">Tugas</th>
+                    <th style="width:12%;">Kompetensi / Praktik</th>
+                    <th style="width:9%;">Nilai Akhir</th>
                     <th style="width:8%;">Predikat</th>
-                    <th style="width:25%;">Capaian Kompetensi</th>
+                    <th style="width:23%;">Capaian Kompetensi</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach($nilaiValid as $i => $n): ?>
                     <tr>
                         <td class="center"><?= $i + 1 ?></td>
-                        <td><?= htmlspecialchars($n['kode_mapel'] ?? '-') ?></td>
                         <td><?= htmlspecialchars($n['nama_mapel'] ?? '-') ?></td>
                         <td class="center"><?= $n['nilai_tugas'] !== null && $n['nilai_tugas'] !== '' ? htmlspecialchars($n['nilai_tugas']) : '-' ?></td>
                         <td class="center"><?= $n['nilai_uts'] !== null && $n['nilai_uts'] !== '' ? htmlspecialchars($n['nilai_uts']) : '-' ?></td>
@@ -236,33 +234,16 @@ $logoUrl = isset($logo) && $logo ? $logo : (file_exists(BASE_PATH . '/public/img
                     </tr>
                 <?php endforeach; ?>
             </tbody>
+            <tfoot>
+                <tr style="background:#e9e9e9; font-weight:bold;">
+                    <td colspan="5" style="text-align:right; font-weight:bold; padding-right:8px;">RATA-RATA NILAI:</td>
+                    <td class="nilai-akhir center" style="font-weight:bold; color:#000;"><?= number_format($rata, 2) ?></td>
+                    <td class="predikat" style="font-weight:bold;"><?= grd($rata) ?></td>
+                    <td class="wrap" style="font-weight:bold; font-size:9.5pt;"><?= pred($rata) ?></td>
+                </tr>
+            </tfoot>
         </table>
-    <?php endif; ?>
-
-    <div class="section-title">KETIDAKHADIRAN</div>
-    <table class="table-small" style="width:60%;margin-bottom:4mm;">
-        <thead>
-            <tr><th style="width:70%;">Keterangan</th><th>Jumlah</th></tr>
-        </thead>
-        <tbody>
-            <tr><td>Sakit</td><td><?= (int)$ketidakhadiran['Sakit'] ?> hari</td></tr>
-            <tr><td>Izin</td><td><?= (int)$ketidakhadiran['Izin'] ?> hari</td></tr>
-            <tr><td>Alpa</td><td><?= (int)$ketidakhadiran['Alpa'] ?> hari</td></tr>
-        </tbody>
-    </table>
-
-    <table class="table-small" style="margin-top:6mm;">
-        <tr>
-            <td class="center" style="width:33%;padding:12mm 0 3mm 0;">Orang Tua/Wali</td>
-            <td class="center" style="width:34%;padding:12mm 0 3mm 0;">Wali Kelas</td>
-            <td class="center" style="width:33%;padding:12mm 0 3mm 0;">Kepala Sekolah</td>
-        </tr>
-        <tr>
-            <td class="center" style="height:18mm;">( <?= htmlspecialchars($namaOrtu) ?> )</td>
-            <td class="center" style="height:18mm;"><strong><?= htmlspecialchars($namaWali) ?></strong><br>NIP. <?= htmlspecialchars($nipWali) ?></td>
-            <td class="center" style="height:18mm;"><strong><?= htmlspecialchars($namaKepala) ?></strong></td>
-        </tr>
-    </table>
+<?php endif; ?>
 </div>
 </body>
 </html>

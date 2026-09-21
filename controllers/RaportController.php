@@ -270,11 +270,26 @@ class RaportController {
         if (!$siswaId || !$kelasId) {
             return $summary;
         }
-        $st=$db->prepare("SELECT status, COUNT(*) c FROM absensi_siswa WHERE siswa_id=? AND kelas_id=? AND MONTH(tanggal)=? AND YEAR(tanggal)=? GROUP BY status");
+        $sql = "SELECT status_harian, COUNT(*) c
+                FROM (
+                    SELECT 
+                        tanggal,
+                        CASE 
+                            WHEN SUM(CASE WHEN status = 'Hadir' THEN 1 ELSE 0 END) > 0 THEN 'Hadir'
+                            WHEN SUM(CASE WHEN status = 'Izin' THEN 1 ELSE 0 END) > 0 THEN 'Izin'
+                            WHEN SUM(CASE WHEN status = 'Sakit' THEN 1 ELSE 0 END) > 0 THEN 'Sakit'
+                            ELSE 'Alpa'
+                        END AS status_harian
+                    FROM absensi_siswa 
+                    WHERE siswa_id=? AND kelas_id=? AND MONTH(tanggal)=? AND YEAR(tanggal)=? 
+                    GROUP BY tanggal
+                ) AS daily_att
+                GROUP BY status_harian";
+        $st=$db->prepare($sql);
         $st->execute([$siswaId,$kelasId,(int)$bulan,(int)$tahun]);
         foreach ($st->fetchAll() as $row) {
-            if (isset($summary[$row['status']])) {
-                $summary[$row['status']] = (int)$row['c'];
+            if (isset($summary[$row['status_harian']])) {
+                $summary[$row['status_harian']] = (int)$row['c'];
             }
         }
         return $summary;

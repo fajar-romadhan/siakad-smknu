@@ -38,6 +38,9 @@
         <a href="<?= base_url('index.php?page=raport') ?>" class="nav-item <?= $p==='raport'?'active':'' ?>" data-tip="Cetak Raport">
             <span class="nav-icon">📄</span> <span class="nav-label-text">Cetak Raport</span>
         </a>
+        <a href="<?= base_url('index.php?page=nilai') ?>" class="nav-item <?= $p==='nilai'?'active':'' ?>" data-tip="Buka Kunci Nilai">
+            <span class="nav-icon">🔓</span> <span class="nav-label-text">Buka Kunci Nilai</span>
+        </a>
         <a href="<?= base_url('index.php?page=pengumuman') ?>" class="nav-item <?= $p==='pengumuman'?'active':'' ?>" data-tip="Pengumuman">
             <span class="nav-icon">📢</span> <span class="nav-label-text">Pengumuman</span>
         </a>

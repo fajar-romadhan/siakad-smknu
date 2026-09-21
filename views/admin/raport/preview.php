@@ -50,16 +50,44 @@ if(!$siswa || !$kelas){ echo '<div class="alert alert-danger">Data tidak ditemuk
                         <td><strong><?= $n['nilai_akhir']??'-' ?></strong></td>
                         <td><?= htmlspecialchars($n['capaian_kompetensi']?:'-') ?></td>
                         <td><?= gr($n['nilai_akhir']) ?></td>
-                        <td><?= $val?'<span class="badge aktif">Tervalidasi</span>':'<span class="badge draft">Belum divalidasi</span>' ?></td>
+                        <td>
+                            <?= $val?'<span class="badge aktif">Tervalidasi</span>':'<span class="badge draft">Belum divalidasi</span>' ?>
+                            <?php if ($val && Auth::role() === 'admin'): ?>
+                                <br>
+                                <a href="<?= base_url('index.php?page=nilai&action=bukaKunci&kelas_id='.$kelas['id'].'&mapel_id='.$n['mapel_id'].'&bulan='.$bulan.'&tahun='.$tahun.'&siswa_id='.$siswa['id']) ?>" 
+                                   class="btn btn-danger btn-sm" 
+                                   style="padding:2px 6px; font-size:10px; margin-top:2px;" 
+                                   onclick="return confirm('Apakah Anda yakin ingin membuka kunci nilai ini agar dapat diedit kembali oleh Guru?')">
+                                    🔓 Buka Kunci
+                                </a>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?> 
                 </tbody>
+                <?php 
+                $sumAkhir = 0; $cntAkhir = 0;
+                foreach($nilai as $nItem) {
+                    if ($nItem['nilai_akhir'] !== null && $nItem['nilai_akhir'] !== '') {
+                        $sumAkhir += (float)$nItem['nilai_akhir'];
+                        $cntAkhir++;
+                    }
+                }
+                $avgAkhir = $cntAkhir > 0 ? round($sumAkhir / $cntAkhir, 2) : 0;
+                ?>
+                <tfoot>
+                    <tr style="background:#E8F5E9; font-weight:700;">
+                        <td colspan="5" style="text-align:right; font-weight:700;">Rata-Rata Nilai Akhir:</td>
+                        <td><strong style="color:var(--primary); font-size:15px;"><?= $cntAkhir > 0 ? number_format($avgAkhir, 2) : '-' ?></strong></td>
+                        <td colspan="3"><strong style="color:var(--primary);"><?= $cntAkhir > 0 ? gr($avgAkhir) : '-' ?></strong></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
-        <?php endif; ?>
         <div class="form-actions">
             <a href="<?= base_url('index.php?page=raport&action=cetak&kelas_id='.$kelas['id'].'&siswa_id='.$siswa['id'].'&bulan='.$bulan.'&tahun='.$tahun) ?>" target="_blank" class="btn btn-primary">🖨 Cetak Raport (PDF)</a>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 <?php $content=ob_get_clean(); require VIEW_PATH.'/layouts/admin.php'; ?>

@@ -82,23 +82,127 @@ class AbsensiController {
         redirect(base_url('index.php?page=absensi&action=siswa&kelas_id='.$_POST['kelas_id']));
     }
     public function rekapSiswa() {
-        Auth::requireRole('admin');
+        Auth::requireLogin();
+        $role = Auth::role();
+        if (!in_array($role, ['admin', 'guru', 'kepala_sekolah'], true)) {
+            Auth::requireRole('admin');
+        }
+
         $db=getDB();
         $tahunAjaranList=$db->query("SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC")->fetchAll();
         $kelasList=$db->query("SELECT * FROM kelas ORDER BY nama_kelas")->fetchAll();
-        $rekapData=[];$stats=['Hadir'=>0,'Izin'=>0,'Sakit'=>0,'Alpa'=>0]; $totalSiswaKelas=0;
-        $rekapPerSiswa=[];
-        if(isset($_GET['kelas_id']) && isset($_GET['bulan'])) {
-            $st=$db->prepare("SELECT a.*,s.nama as siswa_nama,s.nisn FROM absensi_siswa a JOIN siswa s ON a.siswa_id=s.id WHERE a.kelas_id=? AND MONTH(a.tanggal)=? AND YEAR(a.tanggal)=? ORDER BY a.tanggal DESC,s.nama");
-            $st->execute([$_GET['kelas_id'],$_GET['bulan'],$_GET['tahun']??date('Y')]);
-            $rekapData=$st->fetchAll();
-            foreach($rekapData as $r) $stats[$r['status']]++;
-            // Agregat per siswa
-            $agg=$db->prepare("SELECT s.id,s.nisn,s.nama, SUM(CASE WHEN a.status='Hadir' THEN 1 ELSE 0 END) as h, SUM(CASE WHEN a.status='Izin' THEN 1 ELSE 0 END) as i, SUM(CASE WHEN a.status='Sakit' THEN 1 ELSE 0 END) as sk, SUM(CASE WHEN a.status='Alpa' THEN 1 ELSE 0 END) as al FROM siswa s JOIN kelas_siswa ks ON s.id=ks.siswa_id LEFT JOIN absensi_siswa a ON a.siswa_id=s.id AND a.kelas_id=ks.kelas_id AND MONTH(a.tanggal)=? AND YEAR(a.tanggal)=? WHERE ks.kelas_id=? GROUP BY s.id ORDER BY s.nama");
-            $agg->execute([$_GET['bulan'],$_GET['tahun']??date('Y'),$_GET['kelas_id']]);
-            $rekapPerSiswa=$agg->fetchAll();
-            $totalSiswaKelas=count($rekapPerSiswa);
+        
+        $kelasIdSel = $_GET['kelas_id'] ?? null;
+        $mapelIdSel = isset($_GET['mapel_id']) ? (int)$_GET['mapel_id'] : 0;
+        
+        // Fetch mapel list for filter
+        if ($kelasIdSel) {
+            $stM = $db->prepare("SELECT DISTINCT m.id, m.nama_mapel, m.kode_mapel 
+                                 FROM mapel m 
+                                 LEFT JOIN jadwal j ON m.id = j.mapel_id 
+                                 WHERE j.kelas_id = ? OR m.id IN (SELECT mapel_id FROM absensi_siswa WHERE kelas_id = ?)
+                                 ORDER BY m.nama_mapel");
+            $stM->execute([$kelasIdSel, $kelasIdSel]);
+            $mapelList = $stM->fetchAll();
+            if (empty($mapelList)) {
+                $mapelList = $db->query("SELECT id, nama_mapel, kode_mapel FROM mapel ORDER BY nama_mapel")->fetchAll();
+            }
+        } else {
+            $mapelList = $db->query("SELECT id, nama_mapel, kode_mapel FROM mapel ORDER BY nama_mapel")->fetchAll();
         }
+
+        $rekapData=[]; $stats=['Hadir'=>0,'Izin'=>0,'Sakit'=>0,'Alpa'=>0]; $totalSiswaKelas=0;
+        $rekapPerSiswa=[];
+        $siswaId = isset($_GET['siswa_id']) ? (int)$_GET['siswa_id'] : 0;
+
+        if($kelasIdSel && isset($_GET['bulan'])) {
+            $sqlRekap = "SELECT a.*, s.nama as siswa_nama, s.nisn 
+                         FROM absensi_siswa a 
+                         JOIN siswa s ON a.siswa_id=s.id 
+                         WHERE a.kelas_id=? AND MONTH(a.tanggal)=? AND YEAR(a.tanggal)=?";
+            $paramsRekap = [$kelasIdSel, $_GET['bulan'], $_GET['tahun']??date('Y')];
+            if ($mapelIdSel > 0) {
+                $sqlRekap .= " AND a.mapel_id=?";
+                $paramsRekap[] = $mapelIdSel;
+            }
+            $sqlRekap .= " ORDER BY a.tanggal DESC, s.nama";
+            $st = $db->prepare($sqlRekap);
+            $st->execute($paramsRekap);
+            $rekapData = $st->fetchAll();
+
+            foreach($rekapData as $r) {
+                if (isset($stats[$r['status']])) {
+                    $stats[$r['status']]++;
+                }
+            }
+
+            // Agregat per siswa
+            $sqlAgg = "SELECT s.id, s.nisn, s.nama, 
+                              SUM(CASE WHEN a.status='Hadir' THEN 1 ELSE 0 END) as h, 
+                              SUM(CASE WHEN a.status='Izin' THEN 1 ELSE 0 END) as i, 
+                              SUM(CASE WHEN a.status='Sakit' THEN 1 ELSE 0 END) as sk, 
+                              SUM(CASE WHEN a.status='Alpa' THEN 1 ELSE 0 END) as al 
+                       FROM siswa s 
+                       JOIN kelas_siswa ks ON s.id=ks.siswa_id 
+                       LEFT JOIN absensi_siswa a ON a.siswa_id=s.id AND a.kelas_id=ks.kelas_id AND MONTH(a.tanggal)=? AND YEAR(a.tanggal)=?";
+            $paramsAgg = [$_GET['bulan'], $_GET['tahun']??date('Y')];
+            if ($mapelIdSel > 0) {
+                $sqlAgg .= " AND a.mapel_id=?";
+                $paramsAgg[] = $mapelIdSel;
+            }
+            $sqlAgg .= " WHERE ks.kelas_id=? GROUP BY s.id ORDER BY s.nama";
+            $paramsAgg[] = $kelasIdSel;
+
+            $agg = $db->prepare($sqlAgg);
+            $agg->execute($paramsAgg);
+            $rekapPerSiswa = $agg->fetchAll();
+            $totalSiswaKelas = count($rekapPerSiswa);
+        }
+
+        // Jika siswa_id dipilih untuk melihat detail presensi 1 siswa
+        $detailSiswa = null;
+        $detailAbsensi = [];
+        $detailStats = ['Hadir'=>0,'Izin'=>0,'Sakit'=>0,'Alpa'=>0];
+
+        if ($siswaId > 0) {
+            $siswaModel = new SiswaModel();
+            $detailSiswa = $siswaModel->find($siswaId);
+            if ($detailSiswa) {
+                $bulanSel = $_GET['bulan'] ?? date('m');
+                $tahunSel = $_GET['tahun'] ?? date('Y');
+
+                $sqlDetail = "SELECT a.*, k.nama_kelas, m.nama_mapel, g.nama as guru_nama 
+                              FROM absensi_siswa a 
+                              LEFT JOIN kelas k ON a.kelas_id = k.id 
+                              LEFT JOIN mapel m ON a.mapel_id = m.id 
+                              LEFT JOIN guru g ON a.guru_id = g.id 
+                              WHERE a.siswa_id = ?";
+                $paramsDetail = [$siswaId];
+                if ((int)$bulanSel > 0) {
+                    $sqlDetail .= " AND MONTH(a.tanggal) = ?";
+                    $paramsDetail[] = (int)$bulanSel;
+                }
+                if ((int)$tahunSel > 0) {
+                    $sqlDetail .= " AND YEAR(a.tanggal) = ?";
+                    $paramsDetail[] = (int)$tahunSel;
+                }
+                if ($mapelIdSel > 0) {
+                    $sqlDetail .= " AND a.mapel_id = ?";
+                    $paramsDetail[] = $mapelIdSel;
+                }
+                $sqlDetail .= " ORDER BY a.tanggal DESC";
+                $stDetail = $db->prepare($sqlDetail);
+                $stDetail->execute($paramsDetail);
+                $detailAbsensi = $stDetail->fetchAll();
+
+                foreach ($detailAbsensi as $da) {
+                    if (isset($detailStats[$da['status']])) {
+                        $detailStats[$da['status']]++;
+                    }
+                }
+            }
+        }
+
         require VIEW_PATH.'/admin/absensi/rekap-siswa.php';
     }
     public function rekapGuru() {
@@ -220,11 +324,63 @@ class AbsensiController {
     }
 
     public function exportSiswa() {
-        Auth::requireRole('admin');
+        Auth::requireLogin();
+        $role = Auth::role();
+        if (!in_array($role, ['admin', 'guru', 'kepala_sekolah'], true)) {
+            Auth::requireRole('admin');
+        }
+
         $db=getDB();
         $kelas_id=$_GET['kelas_id']??null;
         $bulan=$_GET['bulan']??date('m');
         $tahun=$_GET['tahun']??date('Y');
+        $siswa_id=isset($_GET['siswa_id'])?(int)$_GET['siswa_id']:0;
+
+        if ($siswa_id > 0) {
+            $siswa = $db->prepare("SELECT s.*, k.nama_kelas FROM siswa s LEFT JOIN kelas_siswa ks ON s.id=ks.siswa_id LEFT JOIN kelas k ON ks.kelas_id=k.id WHERE s.id=? LIMIT 1");
+            $siswa->execute([$siswa_id]);
+            $sRow = $siswa->fetch();
+
+            $st = $db->prepare("SELECT a.tanggal, s.nisn, s.nama, k.nama_kelas, m.nama_mapel, g.nama as guru_nama, a.status 
+                                FROM absensi_siswa a 
+                                JOIN siswa s ON a.siswa_id=s.id 
+                                LEFT JOIN kelas k ON a.kelas_id=k.id 
+                                LEFT JOIN mapel m ON a.mapel_id=m.id 
+                                LEFT JOIN guru g ON a.guru_id=g.id 
+                                WHERE a.siswa_id=? AND MONTH(a.tanggal)=? AND YEAR(a.tanggal)=? 
+                                ORDER BY a.tanggal DESC");
+            $st->execute([$siswa_id, $bulan, $tahun]);
+            $data = $st->fetchAll();
+
+            $namaSiswa = $sRow['nama'] ?? 'Siswa';
+            $namaKelas = $sRow['nama_kelas'] ?? 'Kelas';
+            $fname = 'Detail_Absensi_Siswa_' . preg_replace('/[^A-Za-z0-9._-]+/', '_', $namaSiswa) . '_' . $bulan . '-' . $tahun . '.xls';
+
+            header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $fname . '"');
+            echo "\xEF\xBB\xBF";
+            echo '<html><head><meta charset="UTF-8"></head><body>';
+            echo '<h3>Detail Presensi Harian Siswa - ' . htmlspecialchars($namaSiswa) . ' (' . htmlspecialchars($sRow['nisn'] ?? '-') . ')</h3>';
+            echo '<p>Kelas: ' . htmlspecialchars($namaKelas) . ' | Periode: ' . date('F', mktime(0,0,0, $bulan)) . ' ' . $tahun . '</p>';
+            echo '<table border="1" cellspacing="0" cellpadding="6"><thead><tr style="background:#00923F;color:white;"><th>No</th><th>Tanggal</th><th>Hari</th><th>Mata Pelajaran</th><th>Guru Pengampu</th><th>Status</th></tr></thead><tbody>';
+            
+            $hariIndo = ['Sunday'=>'Minggu','Monday'=>'Senin','Tuesday'=>'Selasa','Wednesday'=>'Rabu','Thursday'=>'Kamis','Friday'=>'Jumat','Saturday'=>'Sabtu'];
+
+            foreach ($data as $i => $r) {
+                $dayName = $hariIndo[date('l', strtotime($r['tanggal']))] ?? date('l', strtotime($r['tanggal']));
+                echo '<tr>';
+                echo '<td>' . ($i + 1) . '</td>';
+                echo '<td>' . date('d/m/Y', strtotime($r['tanggal'])) . '</td>';
+                echo '<td>' . $dayName . '</td>';
+                echo '<td>' . htmlspecialchars($r['nama_mapel'] ?? '-') . '</td>';
+                echo '<td>' . htmlspecialchars($r['guru_nama'] ?? '-') . '</td>';
+                echo '<td>' . $r['status'] . '</td>';
+                echo '</tr>';
+            }
+            echo '</tbody></table></body></html>';
+            exit;
+        }
+
         $kelas=$db->prepare("SELECT nama_kelas FROM kelas WHERE id=?"); $kelas->execute([$kelas_id]);
         $namaKelas=$kelas->fetchColumn() ?: 'Semua';
         $st=$db->prepare("SELECT a.tanggal,s.nisn,s.nama,a.status FROM absensi_siswa a JOIN siswa s ON a.siswa_id=s.id WHERE a.kelas_id=? AND MONTH(a.tanggal)=? AND YEAR(a.tanggal)=? ORDER BY a.tanggal,s.nama");

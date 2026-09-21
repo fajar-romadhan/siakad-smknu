@@ -14,6 +14,7 @@ if ($guru) {
         SELECT
             j.*,
             m.nama_mapel,
+            m.kode_mapel,
             k.nama_kelas
         FROM jadwal j
         JOIN mapel m ON j.mapel_id = m.id

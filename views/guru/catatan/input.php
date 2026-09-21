@@ -4,7 +4,7 @@ $kelas = $db->prepare("SELECT nama_kelas FROM kelas WHERE id=?"); $kelas->execut
 $mapel = $db->prepare("SELECT nama_mapel FROM mapel WHERE id=?"); $mapel->execute([$mapelId]); $mapelNama = $mapel->fetchColumn();
 ?>
 <div class="dash-header-row">
-    <h2 class="page-title">Catatan Siswa - Kelas <?= htmlspecialchars($kelasNama) ?> - <?= htmlspecialchars($mapelNama) ?></h2>
+    <h2 class="page-title">Catatan Siswa - <?= htmlspecialchars(format_kelas($kelasNama)) ?> - <?= htmlspecialchars($mapelNama) ?></h2>
     <a href="<?= base_url('index.php?page=catatan') ?>" class="btn btn-secondary">← Kembali</a>
 </div>
 

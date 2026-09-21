@@ -31,9 +31,6 @@
         <a href="<?= base_url('index.php?page=kepsek&action=absensiGuru') ?>" class="nav-item <?= ($p==='kepsek'&&$a==='absensiGuru')?'active':'' ?>" data-tip="Rekap Absensi Guru">
             <span class="nav-icon">👨‍🏫</span> <span class="nav-label-text">Absensi Guru</span>
         </a>
-        <a href="<?= base_url('index.php?page=kepsek&action=nilai') ?>" class="nav-item <?= ($p==='kepsek'&&$a==='nilai')?'active':'' ?>" data-tip="Rekap Nilai">
-            <span class="nav-icon">📝</span> <span class="nav-label-text">Rekap Nilai</span>
-        </a>
         <a href="<?= base_url('index.php?page=kepsek&action=pengumuman') ?>" class="nav-item <?= ($p==='kepsek'&&$a==='pengumuman')?'active':'' ?>" data-tip="Pengumuman">
             <span class="nav-icon">📢</span> <span class="nav-label-text">Pengumuman</span>
         </a>

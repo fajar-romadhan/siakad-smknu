@@ -9,7 +9,94 @@ class NilaiController {
         $db=getDB();
         $bulan=(int)($_GET['bulan']??date('m'));
         $tahun=(int)($_GET['tahun']??date('Y'));
-        if($role==='guru') {
+        if ($role === 'admin') {
+            $q = trim($_GET['q'] ?? '');
+            $kelasId = (int)($_GET['kelas_id'] ?? 0);
+            $bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : 0;
+            $tahunAjaranId = (int)($_GET['tahun_ajaran_id'] ?? 0);
+
+            $kelasList = $db->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas")->fetchAll();
+            $tahunAjaranList = $db->query("SELECT * FROM tahun_ajaran ORDER BY id DESC")->fetchAll();
+
+            $hasilPencarianSiswa = [];
+            if ($q !== '') {
+                $sqlSiswa = "SELECT 
+                                n.id as nilai_id,
+                                n.siswa_id,
+                                n.kelas_id,
+                                n.mapel_id,
+                                n.bulan,
+                                n.tahun,
+                                n.nilai_tugas,
+                                n.nilai_uts,
+                                n.nilai_uas,
+                                n.nilai_akhir,
+                                n.capaian_kompetensi,
+                                n.is_validated,
+                                s.nama as siswa_nama,
+                                s.nisn,
+                                k.nama_kelas,
+                                m.nama_mapel,
+                                g.nama as guru_nama,
+                                ta.tahun_ajaran
+                            FROM nilai n
+                            JOIN siswa s ON n.siswa_id = s.id
+                            JOIN kelas k ON n.kelas_id = k.id
+                            JOIN mapel m ON n.mapel_id = m.id
+                            LEFT JOIN guru g ON n.guru_id = g.id
+                            LEFT JOIN tahun_ajaran ta ON n.tahun_ajaran_id = ta.id
+                            WHERE (s.nama LIKE ? OR s.nisn LIKE ? OR s.kode_siswa LIKE ?)
+                            ORDER BY s.nama, n.bulan DESC";
+                $stS = $db->prepare($sqlSiswa);
+                $stS->execute(["%$q%", "%$q%", "%$q%"]);
+                $hasilPencarianSiswa = $stS->fetchAll();
+            }
+
+            $sql = "SELECT 
+                        n.kelas_id,
+                        n.mapel_id,
+                        n.guru_id,
+                        n.bulan,
+                        n.tahun,
+                        n.tahun_ajaran_id,
+                        k.nama_kelas,
+                        m.nama_mapel,
+                        g.nama as guru_nama,
+                        ta.tahun_ajaran,
+                        COUNT(n.id) as total_siswa,
+                        SUM(CASE WHEN n.is_validated = 1 THEN 1 ELSE 0 END) as total_terkunci,
+                        SUM(CASE WHEN n.is_validated = 0 THEN 1 ELSE 0 END) as total_draft
+                    FROM nilai n
+                    JOIN kelas k ON n.kelas_id = k.id
+                    JOIN mapel m ON n.mapel_id = m.id
+                    LEFT JOIN guru g ON n.guru_id = g.id
+                    LEFT JOIN tahun_ajaran ta ON n.tahun_ajaran_id = ta.id
+                    WHERE 1=1";
+            $params = [];
+            if ($kelasId > 0) {
+                $sql .= " AND n.kelas_id = ?";
+                $params[] = $kelasId;
+            }
+            if ($bulan > 0) {
+                $sql .= " AND n.bulan = ?";
+                $params[] = $bulan;
+            }
+            if ($tahunAjaranId > 0) {
+                $sql .= " AND n.tahun_ajaran_id = ?";
+                $params[] = $tahunAjaranId;
+            }
+
+            $sql .= " GROUP BY n.kelas_id, n.mapel_id, n.guru_id, n.bulan, n.tahun, n.tahun_ajaran_id, k.nama_kelas, m.nama_mapel, g.nama, ta.tahun_ajaran
+                      ORDER BY k.nama_kelas, m.nama_mapel, n.bulan DESC";
+            $st = $db->prepare($sql);
+            $st->execute($params);
+            $rekapValidasi = $st->fetchAll();
+
+            $msg = flash('success');
+            $error = flash('error');
+            require VIEW_PATH . '/admin/nilai/buka-kunci.php';
+            return;
+        } elseif($role==='guru') {
             $guru=(new GuruModel())->whereOne('user_id',Auth::id());
             $kelasList=$db->prepare("SELECT DISTINCT k.id,k.nama_kelas,m.nama_mapel,m.id as mapel_id FROM jadwal j JOIN kelas k ON j.kelas_id=k.id JOIN mapel m ON j.mapel_id=m.id WHERE j.guru_id=? ORDER BY k.nama_kelas");
             $kelasList->execute([$guru['id']]); $kelasList=$kelasList->fetchAll();
@@ -226,6 +313,37 @@ class NilaiController {
         $m->exec("UPDATE nilai SET is_validated=1, validated_at=NOW() WHERE kelas_id=? AND mapel_id=? AND guru_id=? AND bulan=? AND tahun=? AND tahun_ajaran_id=? AND nilai_akhir IS NOT NULL",[$kelasId,$mapelId,$guru['id'],$bulan,$tahun,$tahunAjaranId]);
         flash('success','Nilai berhasil divalidasi & dikunci untuk periode ini.');
         redirect(base_url('index.php?page=nilai&action=input&kelas_id='.$kelasId.'&mapel_id='.$mapelId.'&bulan='.$bulan.'&tahun='.$tahun));
+    }
+
+    /** Admin membuka kunci (unlock) nilai satu kelas-mapel atau 1 nilai siswa agar dapat direvisi kembali oleh guru */
+    public function bukaKunci() {
+        Auth::requireRole('admin');
+        $m=new NilaiModel();
+        $nilaiId=(int)($_GET['nilai_id']??0);
+        $q=trim($_GET['q']??'');
+        if ($nilaiId > 0) {
+            $m->exec("UPDATE nilai SET is_validated=0, validated_at=NULL WHERE id=?", [$nilaiId]);
+            flash('success','Kunci nilai siswa tersebut berhasil dibuka.');
+            if ($q !== '') {
+                redirect(base_url('index.php?page=nilai&q='.urlencode($q)));
+                return;
+            }
+        }
+        $kelasId=(int)($_POST['kelas_id']??$_GET['kelas_id']??0);
+        $mapelId=(int)($_POST['mapel_id']??$_GET['mapel_id']??0);
+        $bulan=(int)($_POST['bulan']??$_GET['bulan']??date('m'));
+        $tahun=(int)($_POST['tahun']??$_GET['tahun']??date('Y'));
+        $tahunAjaranId=$this->getTahunAjaranId($kelasId,$mapelId);
+        if ($kelasId > 0 && $mapelId > 0) {
+            $m->exec("UPDATE nilai SET is_validated=0, validated_at=NULL WHERE kelas_id=? AND mapel_id=? AND bulan=? AND tahun=? AND tahun_ajaran_id=?",[$kelasId,$mapelId,$bulan,$tahun,$tahunAjaranId]);
+            flash('success','Kunci nilai berhasil dibuka. Guru dapat mengedit kembali nilai periode ini.');
+        }
+        $siswaId=(int)($_GET['siswa_id']??0);
+        if ($siswaId > 0) {
+            redirect(base_url('index.php?page=siswa&action=detail&id='.$siswaId.'&bulan='.$bulan));
+        } else {
+            redirect(base_url('index.php?page=nilai'.($q !== '' ? '&q='.urlencode($q) : '')));
+        }
     }
 
     /** Cetak rekap nilai (PDF-ready HTML) untuk satu kelas-mapel yang diampu guru */

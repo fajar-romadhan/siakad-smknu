@@ -6,7 +6,16 @@
     </div>
     <div class="card-body">
         <div style="display:flex;align-items:center;gap:20px;padding:24px;background:var(--primary-soft);border-radius:var(--radius);margin-bottom:24px;">
-            <div class="profile-avatar" style="width:96px;height:96px;font-size:40px;"><?= strtoupper(substr($profil['nama'],0,1)) ?></div>
+            <?php 
+            $fotoUrl = (!empty($profil['foto']) && file_exists(BASE_PATH . '/public/uploads/guru/' . $profil['foto'])) 
+                       ? base_url('uploads/guru/' . $profil['foto']) 
+                       : null;
+            ?>
+            <?php if ($fotoUrl): ?>
+                <img src="<?= $fotoUrl ?>" alt="Foto Profil Guru" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+            <?php else: ?>
+                <div class="profile-avatar" style="width:96px;height:96px;font-size:40px;"><?= strtoupper(substr($profil['nama'],0,1)) ?></div>
+            <?php endif; ?>
             <div>
                 <h3 style="font-size:22px;color:var(--gray-800);font-weight:700;margin-bottom:4px;"><?= htmlspecialchars($profil['nama']) ?></h3>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">

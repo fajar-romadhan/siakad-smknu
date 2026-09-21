@@ -9,14 +9,14 @@ $persen = $total>0 ? round($statsAbsen['Hadir']/$total*100) : 100;
 </div>
 
 <div class="mobile-card">
-    <h4>Statistik Kehadiran (1 Semester)</h4>
+    <h4>Statistik Kehadiran Harian (1 Semester)</h4>
     <div class="stats-circle">
         <div class="circle" style="--persen:<?= $persen ?>;"><?= $persen ?>%</div>
         <div class="stats-detail">
-            <span>✅ Hadir: <strong><?= $statsAbsen['Hadir'] ?></strong></span>
-            <span>📄 Izin: <strong><?= $statsAbsen['Izin'] ?></strong></span>
-            <span>🏥 Sakit: <strong><?= $statsAbsen['Sakit'] ?></strong></span>
-            <span>❌ Alpa: <strong><?= $statsAbsen['Alpa'] ?></strong></span>
+            <span>✅ Hadir: <strong><?= $statsAbsen['Hadir'] ?> Hari</strong></span>
+            <span>📄 Izin: <strong><?= $statsAbsen['Izin'] ?> Hari</strong></span>
+            <span>🏥 Sakit: <strong><?= $statsAbsen['Sakit'] ?> Hari</strong></span>
+            <span>❌ Alpa: <strong><?= $statsAbsen['Alpa'] ?> Hari</strong></span>
         </div>
     </div>
 </div>

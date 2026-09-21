@@ -14,6 +14,9 @@
         <a href="<?= base_url('index.php?page=dashboard') ?>" class="nav-item <?= $p==='dashboard'?'active':'' ?>" data-tip="Dashboard">
             <span class="nav-icon">📊</span> <span class="nav-label-text">Dashboard</span>
         </a>
+        <a href="<?= base_url('index.php?page=kelas') ?>" class="nav-item <?= $p==='kelas'?'active':'' ?>" data-tip="Kelas">
+            <span class="nav-icon">🏫</span> <span class="nav-label-text">Kelas</span>
+        </a>
         <a href="<?= base_url('index.php?page=absensi') ?>" class="nav-item <?= $p==='absensi'?'active':'' ?>" data-tip="Absensi">
             <span class="nav-icon">✅</span> <span class="nav-label-text">Absensi</span>
         </a>

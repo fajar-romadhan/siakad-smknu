@@ -16,11 +16,23 @@
         <?php else: ?>
         <div class="table-responsive">
             <table class="table" id="guruTable">
-                <thead><tr><th>Nama</th><th>Email</th><th>No. HP</th><th style="width:220px;">Aksi</th></tr></thead>
+                <thead><tr><th style="width:60px;">Foto</th><th>Nama</th><th>Email</th><th>No. HP</th><th style="width:220px;">Aksi</th></tr></thead>
                 <tbody>
                 <?php foreach($data as $g): ?>
+                <?php 
+                $fotoUrl = (!empty($g['foto']) && file_exists(BASE_PATH . '/public/uploads/guru/' . $g['foto'])) 
+                           ? base_url('uploads/guru/' . $g['foto']) 
+                           : null;
+                ?>
                 <tr>
-                    <td><?= htmlspecialchars($g['nama']) ?></td>
+                    <td>
+                        <?php if ($fotoUrl): ?>
+                            <img src="<?= $fotoUrl ?>" alt="Foto" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--gray-300);">
+                        <?php else: ?>
+                            <div class="profile-avatar" style="width:38px;height:38px;font-size:16px;"><?= strtoupper(substr($g['nama'],0,1)) ?></div>
+                        <?php endif; ?>
+                    </td>
+                    <td><strong><?= htmlspecialchars($g['nama']) ?></strong></td>
                     <td><?= htmlspecialchars($g['email'] ?? '-') ?></td>
                     <td><?= htmlspecialchars($g['no_hp'] ?? '-') ?></td>
                     <td class="actions">

@@ -81,11 +81,29 @@ class DashboardController {
                 $ks->execute([$siswa['id']]); $kelas=$ks->fetch();
                 if ($kelas) {
                     $hari=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][date('w')];
-                    $st=$db->prepare("SELECT j.*,m.nama_mapel,g.nama as guru_nama FROM jadwal j JOIN mapel m ON j.mapel_id=m.id JOIN guru g ON j.guru_id=g.id WHERE j.kelas_id=? AND j.hari=? ORDER BY j.jam_mulai");
-                    $st->execute([$kelas['kelas_id'],$hari]); $jadwalHari=$st->fetchAll();
-                    $abs=$db->prepare("SELECT status,COUNT(*) as jml FROM absensi_siswa WHERE siswa_id=? GROUP BY status");
+                    // Hitung agregat kehadiran per hari (jika 1 hari ada banyak mapel, tetap dihitung 1 hari)
+                    $sqlDaily = "SELECT status_harian, COUNT(*) as jml
+                                 FROM (
+                                     SELECT 
+                                         tanggal,
+                                         CASE 
+                                             WHEN SUM(CASE WHEN status = 'Hadir' THEN 1 ELSE 0 END) > 0 THEN 'Hadir'
+                                             WHEN SUM(CASE WHEN status = 'Izin' THEN 1 ELSE 0 END) > 0 THEN 'Izin'
+                                             WHEN SUM(CASE WHEN status = 'Sakit' THEN 1 ELSE 0 END) > 0 THEN 'Sakit'
+                                             ELSE 'Alpa'
+                                         END AS status_harian
+                                     FROM absensi_siswa 
+                                     WHERE siswa_id=? 
+                                     GROUP BY tanggal
+                                 ) AS daily_att
+                                 GROUP BY status_harian";
+                    $abs=$db->prepare($sqlDaily);
                     $abs->execute([$siswa['id']]);
-                    foreach($abs->fetchAll() as $a) $statsAbsen[$a['status']]=$a['jml'];
+                    foreach($abs->fetchAll() as $a) {
+                        if (isset($statsAbsen[$a['status_harian']])) {
+                            $statsAbsen[$a['status_harian']] = (int)$a['jml'];
+                        }
+                    }
                 }
             }
             require VIEW_PATH.'/siswa/dashboard.php';

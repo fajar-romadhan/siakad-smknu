@@ -4,6 +4,26 @@ function d($guru,$k){ return ($guru[$k] ?? '') !== '' && ($guru[$k] ?? null) !==
 <div class="card">
     <div class="card-header"><h3>Biodata Guru</h3></div>
     <div class="card-body">
+        <?php 
+        $fotoUrl = (!empty($guru['foto']) && file_exists(BASE_PATH . '/public/uploads/guru/' . $guru['foto'])) 
+                   ? base_url('uploads/guru/' . $guru['foto']) 
+                   : null;
+        ?>
+        <div style="display:flex;align-items:center;gap:20px;padding:20px;background:var(--primary-soft);border-radius:var(--radius);margin-bottom:24px;">
+            <?php if ($fotoUrl): ?>
+                <img src="<?= $fotoUrl ?>" alt="Foto Guru" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+            <?php else: ?>
+                <div class="profile-avatar" style="width:84px;height:84px;font-size:36px;"><?= strtoupper(substr($guru['nama'],0,1)) ?></div>
+            <?php endif; ?>
+            <div>
+                <h3 style="font-size:22px;color:var(--gray-800);font-weight:700;margin-bottom:4px;"><?= htmlspecialchars($guru['nama']) ?></h3>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+                    <span class="role-badge">Guru</span>
+                    <span style="color:var(--gray-500);font-size:13px;">Kode Guru: <?= htmlspecialchars($guru['kode_guru']) ?></span>
+                </div>
+            </div>
+        </div>
+
         <h4 class="form-section-title">Identitas</h4>
         <div class="detail-grid">
             <div class="detail-item"><label>Kode Guru</label><span><?= d($guru,'kode_guru') ?></span></div>

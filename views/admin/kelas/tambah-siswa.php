@@ -1,14 +1,14 @@
 <?php $pageTitle='Tambah Siswa ke Kelas'; ob_start(); ?>
 <div class="card">
     <div class="card-header">
-        <h3>Tambah Siswa ke Kelas <?= htmlspecialchars($kelas['nama_kelas']) ?></h3>
+        <h3>Tambah Siswa ke <?= htmlspecialchars(format_kelas($kelas['nama_kelas'] ?? '')) ?></h3>
         <form method="GET" action="<?= base_url('index.php') ?>" style="display:flex;gap:8px;align-items:center;">
             <input type="hidden" name="page" value="kelas">
             <input type="hidden" name="action" value="tambahSiswa">
             <input type="hidden" name="id" value="<?= $kelas['id'] ?>">
             <div class="search-bar-figma" style="min-width:220px;">
                 <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input type="text" name="search" placeholder="Cari nama siswa..." value="<?= htmlspecialchars($search) ?>">
+                <input type="text" name="search" placeholder="Cari nama siswa..." value="<?= htmlspecialchars((string)($search ?? '')) ?>">
             </div>
             <button type="submit" class="btn btn-primary">Cari</button>
         </form>
@@ -23,22 +23,22 @@
     $disabled = false;
     $statusText = '';
 
-    if($s['kelas_id']) {
+    if(!empty($s['kelas_id'])) {
         $disabled = true;
 
         if($s['kelas_id'] == $kelas['id']) {
             $statusText = '<span style="color: #00923F; font-weight: 600;">Sudah terdaftar di kelas ini</span>';
         } else {
-            $statusText = '<span style="color: #00923F; font-weight: 600;">Sudah terdaftar di kelas ' . htmlspecialchars($s['nama_kelas']) . '</span>';
+            $statusText = '<span style="color: #00923F; font-weight: 600;">Sudah terdaftar di ' . htmlspecialchars(format_kelas($s['nama_kelas'] ?? '')) . '</span>';
         }
     }
 ?> 
                 
                 <tr>
                     <td><input type="checkbox" name="siswa_ids[]" value="<?= $s['id'] ?>" class="siswa-check" <?= $disabled ? 'disabled' : '' ?>></td>
-                    <td><?= htmlspecialchars($s['nisn']) ?></td>
+                    <td><?= htmlspecialchars((string)($s['nisn'] ?? '-')) ?></td>
                     <td>
-                        <?= htmlspecialchars($s['nama']) ?>
+                        <?= htmlspecialchars((string)($s['nama'] ?? '-')) ?>
                         <?php if($statusText): ?>
                             <div style="font-size:0.95rem;color:var(--gray-500);margin-top:4px;line-height:1.4;"><?= $statusText ?></div>
                         <?php endif; ?>

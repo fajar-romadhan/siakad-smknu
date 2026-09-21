@@ -11,3 +11,4 @@ deployment:
     - /bin/cp -R views $DEPLOYPATH
     - /bin/cp .htaccess $DEPLOYPATH
     - /bin/cp index.php $DEPLOYPATH
+    - /bin/chmod -R 755 $DEPLOYPATH/public/uploads

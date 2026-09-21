@@ -4,7 +4,7 @@ $mapelNama = '';
 foreach($mapelList as $mp) if($mp['id']==$mapelIdSel) $mapelNama = $mp['nama_mapel'];
 ?>
 <div class="dash-header-row">
-    <h2 class="page-title">Absen Siswa - Kelas <?= htmlspecialchars($kelas['nama_kelas']) ?></h2>
+    <h2 class="page-title">Absen Siswa - <?= htmlspecialchars(format_kelas($kelas['nama_kelas'])) ?></h2>
     <a href="<?= base_url('index.php?page=absensi') ?>" class="btn btn-secondary">← Kembali</a>
 </div>
 

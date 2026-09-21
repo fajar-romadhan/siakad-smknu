@@ -50,6 +50,24 @@
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
+                <?php 
+                $sumAkhir = 0; $cntAkhir = 0;
+                foreach($nilai as $n) {
+                    if ($n['nilai_akhir'] !== null && $n['nilai_akhir'] !== '') {
+                        $sumAkhir += (float)$n['nilai_akhir'];
+                        $cntAkhir++;
+                    }
+                }
+                $avgAkhir = $cntAkhir > 0 ? round($sumAkhir / $cntAkhir, 2) : 0;
+                $grdAvg = $avgAkhir >= 85 ? 'A' : ($avgAkhir >= 75 ? 'B' : ($avgAkhir >= 65 ? 'C' : 'D'));
+                ?>
+                <tfoot>
+                    <tr style="background:#E8F5E9; font-weight:700;">
+                        <td colspan="6" style="text-align:right; font-weight:700;">Rata-Rata Nilai Akhir:</td>
+                        <td><strong style="color:var(--primary); font-size:15px;"><?= $cntAkhir > 0 ? number_format($avgAkhir, 2) : '-' ?></strong></td>
+                        <td><strong style="color:var(--primary);"><?= $cntAkhir > 0 ? $grdAvg : '-' ?></strong></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         <?php endif; ?>

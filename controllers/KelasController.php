@@ -9,8 +9,33 @@ class KelasController {
     private $model;
     public function __construct() { $this->model=new KelasModel(); }
     public function index() {
+        Auth::requireLogin();
+        $role = Auth::role();
+        $db = getDB();
+
+        if ($role === 'guru') {
+            $guru = (new GuruModel())->whereOne('user_id', Auth::id());
+            $guruId = $guru ? (int)$guru['id'] : 0;
+
+            // Query kelas yang diampu guru (sebagai wali kelas ATAU pengajar di jadwal)
+            $sql = "SELECT DISTINCT k.*, g.nama as wali, ta.tahun_ajaran, 
+                    (SELECT COUNT(*) FROM kelas_siswa WHERE kelas_id=k.id) as jml_siswa 
+                    FROM kelas k 
+                    JOIN tahun_ajaran ta ON k.tahun_ajaran_id=ta.id 
+                    LEFT JOIN guru g ON k.wali_kelas_id=g.id 
+                    LEFT JOIN jadwal j ON j.kelas_id=k.id 
+                    WHERE k.wali_kelas_id=? OR j.guru_id=? 
+                    ORDER BY k.nama_kelas";
+            $st = $db->prepare($sql);
+            $st->execute([$guruId, $guruId]);
+            $kelasList = $st->fetchAll();
+
+            $msg = flash('success');
+            require VIEW_PATH.'/guru/kelas/index.php';
+            return;
+        }
+
         Auth::requireRole('admin');
-        $db=getDB();
         $data=$db->query("SELECT k.*,g.nama as wali,ta.tahun_ajaran,(SELECT COUNT(*) FROM kelas_siswa WHERE kelas_id=k.id) as jml_siswa FROM kelas k LEFT JOIN guru g ON k.wali_kelas_id=g.id JOIN tahun_ajaran ta ON k.tahun_ajaran_id=ta.id ORDER BY k.nama_kelas")->fetchAll();
         $msg=flash('success');
         require VIEW_PATH.'/admin/kelas/index.php';
@@ -39,12 +64,22 @@ class KelasController {
         redirect(base_url('index.php?page=kelas'));
     }
     public function detail($id) {
-        Auth::requireRole('admin');
+        Auth::requireLogin();
+        $role = Auth::role();
         $db=getDB();
         $kelas=$this->model->find($id);
+        if (!$kelas) redirect(base_url('index.php?page=kelas'));
+
         $wali=$kelas['wali_kelas_id'] ? (new GuruModel())->find($kelas['wali_kelas_id']) : null;
         $siswaKelas=$db->prepare("SELECT s.* FROM siswa s JOIN kelas_siswa ks ON s.id=ks.siswa_id WHERE ks.kelas_id=? ORDER BY s.nama");
         $siswaKelas->execute([$id]); $siswaKelas=$siswaKelas->fetchAll();
+
+        if ($role === 'guru') {
+            require VIEW_PATH.'/guru/kelas/detail.php';
+            return;
+        }
+
+        Auth::requireRole('admin');
         $msg=flash('success');
         require VIEW_PATH.'/admin/kelas/detail.php';
     }

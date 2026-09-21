@@ -1,4 +1,4 @@
-<?php $pageTitle='Detail Kelas '.$kelas['nama_kelas']; ob_start(); ?>
+<?php $pageTitle = 'Detail ' . format_kelas($kelas['nama_kelas']); ob_start(); ?>
 <div class="stats-grid">
     <div class="stat-card"><div class="stat-icon">🏫</div><div class="stat-info"><h3><?= htmlspecialchars($kelas['nama_kelas']) ?></h3><p>Nama Kelas</p></div></div>
     <div class="stat-card"><div class="stat-icon">👨‍🏫</div><div class="stat-info"><h3 style="font-size:15px;"><?= htmlspecialchars($wali['nama'] ?? '-') ?></h3><p>Wali Kelas</p></div></div>

@@ -20,3 +20,13 @@ function flash($key, $val=null) {
     unset($_SESSION['flash_'.$key]);
     return $v;
 }
+
+function format_kelas($nama) {
+    if (empty($nama)) return '';
+    $nama = trim((string)$nama);
+    if (preg_match('/^kelas\s+/i', $nama)) {
+        return $nama;
+    }
+    return 'Kelas ' . $nama;
+}
+

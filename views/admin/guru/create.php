@@ -2,7 +2,13 @@
 <div class="card">
     <div class="card-header"><h3>Tambah Data Guru</h3></div>
     <div class="card-body">
-        <form method="POST" action="<?= base_url('index.php?page=guru&action=store') ?>">
+        <form method="POST" action="<?= base_url('index.php?page=guru&action=store') ?>" enctype="multipart/form-data">
+
+            <h4 class="form-section-title">Foto Profil</h4>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label>Foto Profil Guru <small>(JPG, PNG, WEBP, Maks. 3MB)</small></label>
+                <input type="file" name="foto" class="form-control" accept="image/jpeg,image/png,image/webp">
+            </div>
 
             <h4 class="form-section-title">Identitas</h4>
             <div class="form-row">

@@ -8,8 +8,23 @@
     <div class="header-right">
         <span>Selamat datang, <?= htmlspecialchars(Auth::user('nama')) ?></span>
         <div class="profile-dropdown">
-            <div class="profile-avatar" onclick="toggleDropdown()" title="Menu profil">
-                <?= strtoupper(substr(Auth::user('nama'),0,1)) ?>
+            <?php 
+            $headerFotoUrl = null;
+            if (Auth::role() === 'guru') {
+                $hGuru = getDB()->prepare("SELECT foto FROM guru WHERE user_id=? LIMIT 1");
+                $hGuru->execute([Auth::id()]);
+                $hGuruRow = $hGuru->fetch();
+                if (!empty($hGuruRow['foto']) && file_exists(BASE_PATH . '/public/uploads/guru/' . $hGuruRow['foto'])) {
+                    $headerFotoUrl = base_url('uploads/guru/' . $hGuruRow['foto']);
+                }
+            }
+            ?>
+            <div class="profile-avatar" onclick="toggleDropdown()" title="Menu profil" style="<?= $headerFotoUrl ? 'background:none;padding:0;' : '' ?>">
+                <?php if ($headerFotoUrl): ?>
+                    <img src="<?= $headerFotoUrl ?>" alt="Avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+                <?php else: ?>
+                    <?= strtoupper(substr(Auth::user('nama'),0,1)) ?>
+                <?php endif; ?>
             </div>
             <div class="dropdown-menu" id="profileDropdown">
                 <a href="<?= base_url('index.php?page=profil') ?>">Profil</a>

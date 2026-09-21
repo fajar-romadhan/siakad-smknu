@@ -73,9 +73,58 @@ class SiswaController {
         redirect(base_url('index.php?page=siswa'));
     }
     public function detail($id) {
-        Auth::requireRole('admin');
+        $role = Auth::role();
+        if ($role !== 'admin' && $role !== 'guru') {
+            Auth::requireRole('admin');
+        }
         $siswa=$this->model->find($id);
         if(!$siswa) redirect(base_url('index.php?page=siswa'));
+
+        $db = getDB();
+
+        // Data Tahun Ajaran untuk dropdown filter
+        $tahunAjaranList = $db->query("SELECT * FROM tahun_ajaran ORDER BY id DESC")->fetchAll();
+
+        // Parameter filter dari GET
+        $bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
+        $tahunAjaranId = isset($_GET['tahun_ajaran_id']) ? (int)$_GET['tahun_ajaran_id'] : 0;
+
+        // Default ke tahun ajaran aktif jika tidak dipilah dari URL
+        if (!isset($_GET['tahun_ajaran_id']) && !empty($tahunAjaranList)) {
+            foreach ($tahunAjaranList as $ta) {
+                if (($ta['status'] ?? '') === 'aktif') {
+                    $tahunAjaranId = (int)$ta['id'];
+                    break;
+                }
+            }
+            if ($tahunAjaranId === 0 && !empty($tahunAjaranList)) {
+                $tahunAjaranId = (int)$tahunAjaranList[0]['id'];
+            }
+        }
+
+        // Query data nilai siswa berdasarkan filter
+        $sql = "SELECT n.*, m.nama_mapel, k.nama_kelas, g.nama AS guru_nama 
+                FROM nilai n 
+                JOIN mapel m ON n.mapel_id = m.id 
+                LEFT JOIN kelas k ON n.kelas_id = k.id 
+                LEFT JOIN guru g ON n.guru_id = g.id 
+                WHERE n.siswa_id = ?";
+        $params = [$id];
+
+        if ($bulan > 0) {
+            $sql .= " AND n.bulan = ?";
+            $params[] = $bulan;
+        }
+        if ($tahunAjaranId > 0) {
+            $sql .= " AND n.tahun_ajaran_id = ?";
+            $params[] = $tahunAjaranId;
+        }
+
+        $sql .= " ORDER BY m.nama_mapel ASC";
+        $st = $db->prepare($sql);
+        $st->execute($params);
+        $nilaiList = $st->fetchAll();
+
         require VIEW_PATH.'/admin/siswa/detail.php';
     }
     public function edit($id) {

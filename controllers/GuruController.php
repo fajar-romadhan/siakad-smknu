@@ -40,6 +40,43 @@ class GuruController {
         $msg = flash('success'); $error = flash('error');
         require VIEW_PATH.'/admin/guru/create.php';
     }
+    private function handleUploadFoto($inputName = 'foto', $existingFoto = null) {
+        if (!isset($_FILES[$inputName]) || $_FILES[$inputName]['error'] !== UPLOAD_ERR_OK) {
+            return $existingFoto;
+        }
+
+        $file = $_FILES[$inputName];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
+
+        if (!in_array($ext, $allowedExts, true)) {
+            flash('error', 'Format foto harus berupa JPG, JPEG, PNG, atau WEBP.');
+            return $existingFoto;
+        }
+
+        if ($file['size'] > 3 * 1024 * 1024) {
+            flash('error', 'Ukuran file foto maksimal 3MB.');
+            return $existingFoto;
+        }
+
+        $uploadDir = BASE_PATH . '/public/uploads/guru';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+
+        $filename = 'guru_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+        $destination = $uploadDir . '/' . $filename;
+
+        if (move_uploaded_file($file['tmp_name'], $destination)) {
+            if ($existingFoto && file_exists($uploadDir . '/' . $existingFoto) && is_file($uploadDir . '/' . $existingFoto)) {
+                @unlink($uploadDir . '/' . $existingFoto);
+            }
+            return $filename;
+        }
+
+        return $existingFoto;
+    }
+
     public function store() {
         Auth::requireRole('admin');
         $kode  = $this->model->generateKode('G-');
@@ -55,10 +92,12 @@ class GuruController {
             'role'     => 'guru',
             'status'   => 'aktif'
         ]);
+        $foto = $this->handleUploadFoto('foto', null);
         $data = array_merge($this->biodata(), [
             'kode_guru'   => $kode,
             'user_id'     => $userId,
             'tahun_masuk' => $tahun,
+            'foto'        => $foto,
         ]);
         $this->model->insert($data);
         flash('success','Data guru berhasil ditambahkan');
@@ -79,9 +118,11 @@ class GuruController {
     }
     public function update($id) {
         Auth::requireRole('admin');
-        // nama juga sinkron ke tabel users agar konsisten
-        $data = $this->biodata();
         $guru = $this->model->find($id);
+        $foto = $this->handleUploadFoto('foto', $guru['foto'] ?? null);
+        $data = array_merge($this->biodata(), [
+            'foto' => $foto,
+        ]);
         if ($guru && $guru['user_id']) {
             (new UserModel())->update($guru['user_id'], ['nama'=>$data['nama']]);
         }
