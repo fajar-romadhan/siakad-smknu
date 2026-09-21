@@ -1,7 +1,7 @@
 ﻿SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS bsensi_guru, bsensi_siswa, catatan, guru, jadwal, kelas, kelas_siswa, mapel, 
-ilai, pengumuman, siswa, 	ahun_ajaran, users;
+DROP TABLE IF EXISTS absensi_guru, absensi_siswa, catatan, guru, jadwal, kelas, kelas_siswa, mapel, nilai, pengumuman, siswa, tahun_ajaran, users;
 SET FOREIGN_KEY_CHECKS = 1;
+
 -- phpMyAdmin SQL Dump
 -- version 5.2.0
 -- https://www.phpmyadmin.net/
@@ -15990,4 +15990,3 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
